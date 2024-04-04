@@ -5,12 +5,12 @@ import { TableHeader } from './table/table-header'
 import { TableCell } from './table/table-cell'
 import { TableRow } from './table/table-row'
 import { ChangeEvent, useState } from 'react'
-import { attendees } from '../data/attendees'
 import { FormatterDate } from '../utils/FormatterDate'
 
 export function AttendeeList() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [ attendees, setAttendees ] = useState([])
   const totalPages = Math.ceil(attendees.length / 10)
 
   function onSearchInputChanged(e: ChangeEvent<HTMLInputElement>) {
