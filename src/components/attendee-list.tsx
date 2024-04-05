@@ -4,17 +4,47 @@ import { Table } from './table/table'
 import { TableHeader } from './table/table-header'
 import { TableCell } from './table/table-cell'
 import { TableRow } from './table/table-row'
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useEffect, useState } from 'react'
 import { FormatterDate } from '../utils/FormatterDate'
+
+interface Attendee {
+  id: string,
+  name: string,
+  email: string,
+  createdAt: string,
+  checkedInAt: string | null,
+}
+
 
 export function AttendeeList() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [ attendees, setAttendees ] = useState([])
-  const totalPages = Math.ceil(attendees.length / 10)
+
+  const [total, setTotal] = useState(0)
+  const [ attendees, setAttendees ] = useState<Attendee[]>([])
+  
+  const totalPages = Math.ceil(total / 10)
+
+  useEffect(() => {
+    const url = new URL('http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees')
+
+    url.searchParams.set('pageIndex', String(page - 1))
+
+    if(search.length > 0) {
+      url.searchParams.set('query', search)
+    }
+
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      setAttendees(data.attendees)
+      setTotal(data.total)
+    })
+  }, [page, search])
 
   function onSearchInputChanged(e: ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value)
+    setPage(1)
   }
 
   function goToPreviousPage() {
@@ -39,10 +69,11 @@ export function AttendeeList() {
          <h1 className="text-2xl font-bold">Participantes</h1>
          <div className="px-3 w-72 py-1.5 border border-white/10 rounded-lg flex items-center gap-3">
           <Search className='size-4 text-emerald-300'/>
-          <input onChange={onSearchInputChanged} className="bg-transparent flex-1 outline-none h-auto border-0 p-0 text-sm" placeholder="Buscar participantes"></input>
+          <input 
+          onChange={onSearchInputChanged} 
+          className="bg-transparent flex-1 outline-none h-auto border-0 p-0 text-sm focus:ring-0" 
+          placeholder="Buscar participantes"></input>
          </div>
-
-         {search}
          </div>
 
          <Table>
@@ -58,7 +89,7 @@ export function AttendeeList() {
             </thead>
             <tbody>
                 {
-                    attendees.slice((page - 1) * 10, page * 10).map((attendee) => {
+                    attendees.map((attendee) => {
                         return(
                             <TableRow key={attendee.id}>
                             <TableCell>
@@ -72,8 +103,13 @@ export function AttendeeList() {
         
                                 </div>
                             </TableCell>
-                            <TableCell>{FormatterDate(attendee.createdAt) }</TableCell>
-                            <TableCell>{FormatterDate(attendee.checkedInAt) }</TableCell>
+                            <TableCell>{FormatterDate(new Date(attendee.createdAt)) }</TableCell>
+                            <TableCell>{
+                              attendee.checkedInAt === null 
+                             ? <span className='text-zinc-400'>Não fez check-in</span>
+                             : FormatterDate( new Date(attendee.checkedInAt)) 
+                              }
+                             </TableCell>
                             <TableCell>
                                 <IconButton transparent={true}>
                                     <MoreHorizontal className='size-4'/>
@@ -88,7 +124,7 @@ export function AttendeeList() {
             <tfoot>
               <tr>
                     <TableCell colSpan={3} className='py-3 px-4 text-sm text-zinc-300'>
-                        Mostrando 10 de {attendees.length} itens
+                        Mostrando {attendees.length} de {total} itens
                     </TableCell>
                 
                     <TableCell colSpan={3} className='text-right'>
